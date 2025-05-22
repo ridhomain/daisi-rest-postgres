@@ -49,13 +49,24 @@ func FetchChats(c *fiber.Ctx) error {
 	})
 }
 
-// FetchRangeChats handles GET /chats/range?&start=...&end=...
+// FetchRangeChats handles GET /chats/range?&start=...&end=...&<filters>
 func FetchRangeChats(c *fiber.Ctx) error {
 	companyId := c.Locals("companyId").(string)
 	start := c.QueryInt("start", 0)
 	end := c.QueryInt("end", start)
 
-	items, err := chatSvc.FetchRangeChats(c.Context(), companyId, start, end)
+	// build filter map from all other query params
+	filter := make(map[string]interface{})
+	for k, v := range c.Queries() {
+		switch k {
+		case "limit", "offset":
+			continue
+		default:
+			filter[k] = v
+		}
+	}
+
+	items, err := chatSvc.FetchRangeChats(c.Context(), companyId, filter, start, end)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),

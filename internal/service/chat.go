@@ -13,7 +13,7 @@ type ChatService interface {
 	// FetchChats returns a paginated page of chats with total count and joined contact info.
 	FetchChats(ctx context.Context, companyId string, filter map[string]interface{}, limit, offset int) (*repository.ChatPage, error)
 	// FetchRangeChats returns a slice of chats with joined contact info.
-	FetchRangeChats(ctx context.Context, companyId string, start, end int) ([]map[string]interface{}, error)
+	FetchRangeChats(ctx context.Context, companyId string, filter map[string]interface{}, start, end int) ([]map[string]interface{}, error)
 }
 
 // NewChatService constructs a ChatService backed by the given repository.
@@ -41,10 +41,11 @@ func (s *chatService) FetchChats(
 func (s *chatService) FetchRangeChats(
 	ctx context.Context,
 	companyId string,
+	filter map[string]interface{},
 	start, end int,
 ) ([]map[string]interface{}, error) {
 	if companyId == "" {
 		return nil, errors.New("companyId is required")
 	}
-	return s.repo.FetchRangeChats(ctx, companyId, start, end)
+	return s.repo.FetchRangeChats(ctx, companyId, filter, start, end)
 }

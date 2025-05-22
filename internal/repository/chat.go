@@ -15,7 +15,7 @@ type ChatPage struct {
 
 type ChatRepository interface {
 	FetchChats(ctx context.Context, companyId string, filter map[string]interface{}, limit, offset int) (*ChatPage, error)
-	FetchRangeChats(ctx context.Context, companyId string, start, end int) ([]map[string]interface{}, error)
+	FetchRangeChats(ctx context.Context, companyId string, filter map[string]interface{}, start, end int) ([]map[string]interface{}, error)
 }
 
 func NewChatRepository() ChatRepository {
@@ -94,6 +94,8 @@ func (r *chatRepo) FetchChats(
 func (r *chatRepo) FetchRangeChats(
 	ctx context.Context,
 	companyId string,
+	filter map[string]interface{},
+
 	start, end int,
 ) ([]map[string]interface{}, error) {
 	chatTbl := r.chatTable(companyId)
@@ -102,6 +104,11 @@ func (r *chatRepo) FetchRangeChats(
 	base := r.db.
 		Table(chatTbl).
 		WithContext(ctx)
+
+	// apply filters
+	for col, val := range filter {
+		base = base.Where(fmt.Sprintf("%s = ?", col), val)
+	}
 
 	// same join & select fields as above
 	joinSQL := fmt.Sprintf(
