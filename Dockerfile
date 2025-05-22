@@ -40,3 +40,5 @@ EXPOSE 8080
 
 # Run the service
 CMD ["./daisi-rest-postgres"] 
+
+
