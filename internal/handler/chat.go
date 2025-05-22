@@ -49,14 +49,13 @@ func FetchChats(c *fiber.Ctx) error {
 	})
 }
 
-// FetchRangeChats handles GET /chats/range?chat_id=...&start=...&end=...
+// FetchRangeChats handles GET /chats/range?&start=...&end=...
 func FetchRangeChats(c *fiber.Ctx) error {
 	companyId := c.Locals("companyId").(string)
-	chatId := c.Query("chatId")
 	start := c.QueryInt("start", 0)
 	end := c.QueryInt("end", start)
 
-	items, err := chatSvc.FetchRangeChats(c.Context(), companyId, chatId, start, end)
+	items, err := chatSvc.FetchRangeChats(c.Context(), companyId, start, end)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),

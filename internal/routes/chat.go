@@ -13,6 +13,6 @@ func ChatRoutes(r fiber.Router) {
 	// GET  /chats?limit=...&offset=...&<filters>
 	chats.Get("/", middleware.Cache(), handler.FetchChats)
 
-	// GET  /chats/range?chatIdd=...&start=...&end=...
+	// GET  /chats/range?start=...&end=...
 	chats.Get("/range", middleware.Cache(), handler.FetchRangeChats)
 }

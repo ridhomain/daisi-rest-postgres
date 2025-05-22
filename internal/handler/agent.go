@@ -16,10 +16,10 @@ func RegisterAgentService(svc service.AgentService) {
 	agentSvc = svc
 }
 
-// ListAgents handles GET /agents?agentIds=... or GET /agents
+// ListAgents handles GET /agents?agentids=... or GET /agents
 func ListAgents(c *fiber.Ctx) error {
 	companyId := c.Locals("companyId").(string)
-	idsParam := c.Query("agentIds")
+	idsParam := c.Query("agentids")
 
 	var (
 		agents []*model.Agent
@@ -44,10 +44,10 @@ func ListAgents(c *fiber.Ctx) error {
 	return c.JSON(agents)
 }
 
-// GetAgent handles GET /agents/:id
+// GetAgent handles GET /agents/:agent_id
 func GetAgent(c *fiber.Ctx) error {
 	companyId := c.Locals("companyId").(string)
-	agentId := c.Params("id")
+	agentId := c.Params("agent_id")
 
 	agent, err := agentSvc.GetByAgentID(c.Context(), companyId, agentId)
 	if err != nil {
@@ -107,9 +107,9 @@ func UpdateAgentName(c *fiber.Ctx) error {
 // DeleteAgent handles DELETE /agents/:id
 func DeleteAgent(c *fiber.Ctx) error {
 	companyId := c.Locals("companyId").(string)
-	agentId := c.Params("id")
+	id := c.Params("id")
 
-	if err := agentSvc.Delete(c.Context(), companyId, agentId); err != nil {
+	if err := agentSvc.Delete(c.Context(), companyId, id); err != nil {
 		return c.Status(fiber.StatusInternalServerError).
 			JSON(fiber.Map{"error": err.Error()})
 	}

@@ -10,10 +10,10 @@ import (
 func AgentRoutes(r fiber.Router) {
 	agents := r.Group("/agents")
 
-	// GET /agents?agentIds=... or /agents — cached
+	// GET /agents?agentids=... or /agents — cached
 	agents.Get("/", middleware.Cache(), handler.ListAgents)
 
-	// GET /agents/:id — cached
+	// GET /agents/:agent_id — cached
 	agents.Get("/:id", middleware.Cache(), handler.GetAgent)
 
 	// POST  /agents
