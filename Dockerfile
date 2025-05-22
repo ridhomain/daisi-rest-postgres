@@ -35,8 +35,8 @@ COPY --from=builder /app/daisi-rest-postgres .
 # Set environment variables
 ENV GO_ENV=production
 
-# Expose metrics port if needed
-EXPOSE 8080
+# Expose port
+EXPOSE 80
 
 # Run the service
 CMD ["./daisi-rest-postgres"] 
