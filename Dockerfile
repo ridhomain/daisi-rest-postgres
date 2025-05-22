@@ -33,7 +33,10 @@ RUN apt-get update && \
 COPY --from=builder /app/daisi-rest-postgres .
 
 # Set environment variables
-ENV ENVIRONMENT=production
+ENV GO_ENV=production
+
+# Expose port
+EXPOSE 3000
 
 # Expose metrics port if needed
 EXPOSE 8080
