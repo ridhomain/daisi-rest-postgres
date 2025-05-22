@@ -18,7 +18,7 @@ type MessagePage struct {
 // MessageRepository defines read operations on a tenant's partitioned messages table.
 type MessageRepository interface {
 	// FetchMessagesByChatId returns up to `limit` messages plus total count.
-	FetchMessagesByChatId(ctx context.Context, companyId, agentId, chatId string, limit int) (*MessagePage, error)
+	FetchMessagesByChatId(ctx context.Context, companyId, agentId, chatId string, limit, offset int) (*MessagePage, error)
 	// FetchRangeMessagesByChatId returns messages in [start,end] for a given chat.
 	FetchRangeMessagesByChatId(ctx context.Context, companyId, agentId, chatId string, start, end int) ([]map[string]interface{}, error)
 }
@@ -42,7 +42,7 @@ func (r *messageRepo) messageTable(companyId string) string {
 func (r *messageRepo) FetchMessagesByChatId(
 	ctx context.Context,
 	companyId, agentId, chatId string,
-	limit int,
+	limit, offset int,
 ) (*MessagePage, error) {
 	tbl := r.messageTable(companyId)
 
@@ -62,7 +62,8 @@ func (r *messageRepo) FetchMessagesByChatId(
 	// Fetch up to `limit` rows
 	rows := base.
 		Order("message_timestamp DESC").
-		Limit(limit)
+		Limit(limit).
+		Offset(offset)
 
 	var items []map[string]interface{}
 	if err := rows.Find(&items).Error; err != nil {

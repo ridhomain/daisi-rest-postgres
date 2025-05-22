@@ -20,8 +20,9 @@ func FetchMessagesByChatId(c *fiber.Ctx) error {
 	agentId := c.Query("agentId")
 	chatId := c.Query("chatId")
 	limit := c.QueryInt("limit", 20)
+	offset := c.QueryInt("offset", 0)
 
-	page, err := messageSvc.FetchMessagesByChatId(c.Context(), companyId, agentId, chatId, limit)
+	page, err := messageSvc.FetchMessagesByChatId(c.Context(), companyId, agentId, chatId, limit, offset)
 	if err != nil {
 		return c.
 			Status(fiber.StatusBadRequest).

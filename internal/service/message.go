@@ -13,7 +13,7 @@ import (
 // MessageService defines business operations for reading messages.
 type MessageService interface {
 	// FetchMessagesByChatId returns up to `limit` messages plus the total count.
-	FetchMessagesByChatId(ctx context.Context, companyId, agentId, chatId string, limit int) (*repository.MessagePage, error)
+	FetchMessagesByChatId(ctx context.Context, companyId, agentId, chatId string, limit, offset int) (*repository.MessagePage, error)
 	// FetchRangeMessagesByChatId returns messages in [start,end] for a given chat.
 	FetchRangeMessagesByChatId(ctx context.Context, companyId, agentId, chatId string, start, end int) ([]map[string]interface{}, error)
 }
@@ -30,13 +30,13 @@ type messageService struct {
 func (s *messageService) FetchMessagesByChatId(
 	ctx context.Context,
 	companyId, agentId, chatId string,
-	limit int,
+	limit, offset int,
 ) (*repository.MessagePage, error) {
 	if companyId == "" || agentId == "" || chatId == "" {
 		logger.NewLogger().Info("Payload", zap.String("companyId", companyId), zap.String("agentId", agentId), zap.String("chatId", chatId))
 		return nil, errors.New("companyId, agentId, and chatId are required")
 	}
-	return s.repo.FetchMessagesByChatId(ctx, companyId, agentId, chatId, limit)
+	return s.repo.FetchMessagesByChatId(ctx, companyId, agentId, chatId, limit, offset)
 }
 
 func (s *messageService) FetchRangeMessagesByChatId(
