@@ -22,7 +22,7 @@ func LoadConfig() *Config {
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 
 	// defaults
-	viper.SetDefault("PORT", "3000")
+	viper.SetDefault("PORT", "80")
 	viper.SetDefault("PG_DSN", "")
 	viper.SetDefault("SECRET_KEY", "")
 
