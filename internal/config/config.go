@@ -2,6 +2,8 @@ package config
 
 import (
 	"log"
+	"os"
+	"strings"
 
 	"github.com/spf13/viper"
 )
@@ -10,16 +12,29 @@ type Config struct {
 	Port      string
 	PgDsn     string
 	SecretKey string
-	XApiKey   string
 }
 
-// LoadConfig reads environment variables from .env and returns a Config
+// LoadConfig initializes Viper, reads defaults, then .env (if not prod), then real env vars.
 func LoadConfig() *Config {
-	viper.SetConfigFile(".env")
+	// tell Viper to read environment variables
 	viper.AutomaticEnv()
+	// allow nested keys like X_API_KEY to map to XApiKey in our struct
+	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 
-	if err := viper.ReadInConfig(); err != nil {
-		log.Fatalf("Error reading .env file: %v", err)
+	// defaults
+	viper.SetDefault("PORT", "80")
+	viper.SetDefault("PG_DSN", "")
+	viper.SetDefault("SECRET_KEY", "")
+
+	// load .env in dev (APP_ENV != "production")
+	if !isProduction() {
+		viper.SetConfigFile(".env")
+		if err := viper.ReadInConfig(); err != nil {
+			if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
+				log.Fatalf("Error reading .env file: %v", err)
+			}
+			// missing .env is fine in dev
+		}
 	}
 
 	return &Config{
@@ -27,4 +42,8 @@ func LoadConfig() *Config {
 		PgDsn:     viper.GetString("PG_DSN"),
 		SecretKey: viper.GetString("SECRET_KEY"),
 	}
+}
+
+func isProduction() bool {
+	return strings.EqualFold(os.Getenv("APP_ENV"), "production")
 }
