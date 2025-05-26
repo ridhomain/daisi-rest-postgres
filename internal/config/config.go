@@ -23,7 +23,7 @@ func LoadConfig() *Config {
 
 	// defaults
 	viper.SetDefault("PORT", "80")
-	viper.SetDefault("PG_DSN", "")
+	viper.SetDefault("POSTGRES_DSN", "")
 	viper.SetDefault("SECRET_KEY", "")
 
 	// load .env in dev (APP_ENV != "production")
@@ -39,7 +39,7 @@ func LoadConfig() *Config {
 
 	return &Config{
 		Port:      viper.GetString("PORT"),
-		PgDsn:     viper.GetString("PG_DSN"),
+		PgDsn:     viper.GetString("POSTGRES_DSN"),
 		SecretKey: viper.GetString("SECRET_KEY"),
 	}
 }
