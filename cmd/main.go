@@ -26,7 +26,7 @@ func main() {
 	log := logger.NewLogger()
 	defer log.Sync()
 
-	// Connect to Postgres using the full DSN from env (PG_DSN)
+	// Connect to Postgres using the full DSN from env (POSTGRES_DSN)
 	if err := database.ConnectGORM(cfg.PgDsn, log); err != nil {
 		log.Fatal("Cannot initialize database", zap.Error(err))
 	}
