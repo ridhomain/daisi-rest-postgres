@@ -14,7 +14,7 @@ func AgentRoutes(r fiber.Router) {
 	agents.Get("/", middleware.Cache(), handler.ListAgents)
 
 	// GET /agents/:agent_id — cached
-	agents.Get("/:id", middleware.Cache(), handler.GetAgent)
+	agents.Get("/:agent_id", middleware.Cache(), handler.GetAgent)
 
 	// POST  /agents
 	agents.Post("/", handler.CreateAgent)
