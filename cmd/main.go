@@ -35,13 +35,17 @@ func main() {
 	agentRepo := repository.NewAgentRepository()
 	chatRepo := repository.NewChatRepository()
 	messageRepo := repository.NewMessageRepository()
+	contactRepo := repository.NewContactRepository()
+
 	agentSvc := service.NewAgentService(agentRepo)
 	chatSvc := service.NewChatService(chatRepo)
 	messageSvc := service.NewMessageService(messageRepo)
+	contactSvc := service.NewContactService(contactRepo)
 
 	handler.RegisterAgentService(agentSvc)
 	handler.RegisterChatService(chatSvc)
 	handler.RegisterMessageService(messageSvc)
+	handler.RegisterContactService(contactSvc)
 
 	// Create Fiber app
 	app := fiber.New(fiber.Config{
