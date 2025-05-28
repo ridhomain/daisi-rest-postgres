@@ -16,6 +16,7 @@ type ChatPage struct {
 type ChatRepository interface {
 	FetchChats(ctx context.Context, companyId string, filter map[string]interface{}, limit, offset int) (*ChatPage, error)
 	FetchRangeChats(ctx context.Context, companyId string, filter map[string]interface{}, start, end int) ([]map[string]interface{}, error)
+	SearchChats(ctx context.Context, companyId string, q string) (*ChatPage, error)
 }
 
 func NewChatRepository() ChatRepository {
@@ -137,4 +138,49 @@ func (r *chatRepo) FetchRangeChats(
 		return nil, err
 	}
 	return items, nil
+}
+
+func (r *chatRepo) SearchChats(
+	ctx context.Context,
+	companyId string,
+	query string,
+) (*ChatPage, error) {
+	chatTbl := r.chatTable(companyId)
+	contactTbl := r.contactsTable(companyId)
+
+	db := r.db.
+		Table(chatTbl + " ch").
+		Joins(fmt.Sprintf(
+			"LEFT JOIN %s c ON ch.phone_number = c.phone_number AND ch.agent_id = c.agent_id",
+			contactTbl,
+		)).
+		WithContext(ctx)
+
+	if query != "" {
+		like := "%" + query + "%"
+		db = db.Where(`
+			ch.phone_number ILIKE ? OR 
+			ch.push_name ILIKE ? OR 
+			c.phone_number ILIKE ? OR 
+			c.custom_name ILIKE ?
+		`, like, like, like, like)
+	}
+
+	selectFields := []string{
+		"ch.*",
+		"c.custom_name AS contact_custom_name",
+		"c.tags AS contact_tags",
+		"c.assigned_to AS contact_assigned_to",
+	}
+
+	var items []map[string]interface{}
+	if err := db.
+		Select(selectFields).
+		Order("ch.conversation_timestamp DESC").
+		Limit(1000).
+		Find(&items).Error; err != nil {
+		return nil, err
+	}
+
+	return &ChatPage{Total: int64(len(items)), Items: items}, nil
 }

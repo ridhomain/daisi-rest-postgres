@@ -78,3 +78,31 @@ func FetchRangeChats(c *fiber.Ctx) error {
 	}
 	return c.JSON(items)
 }
+
+// SearchChats handles GET /chats/search?q=query
+func SearchChats(c *fiber.Ctx) error {
+	companyId := c.Locals("companyId").(string)
+	q := c.Query("q")
+
+	if q == "" {
+		return c.JSON(fiber.Map{
+			"total": 0,
+			"items": []any{},
+		})
+	}
+
+	page, err := chatSvc.SearchChats(c.Context(), companyId, q)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+	}
+
+	if page.Items == nil {
+		page.Items = make([]map[string]interface{}, 0)
+	}
+	return c.JSON(fiber.Map{
+		"total": page.Total,
+		"items": page.Items,
+	})
+}

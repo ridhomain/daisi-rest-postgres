@@ -15,4 +15,7 @@ func ChatRoutes(r fiber.Router) {
 
 	// GET  /chats/range?start=...&end=...&<filters>
 	chats.Get("/range", middleware.Cache(), handler.FetchRangeChats)
+
+	// GET /chats/search?q=term
+	chats.Get("/search", middleware.Cache(), handler.SearchChats)
 }
