@@ -17,8 +17,8 @@ func RegisterMessageService(svc service.MessageService) {
 // Returns { total: X, items: [...] }
 func FetchMessagesByChatId(c *fiber.Ctx) error {
 	companyId := c.Locals("companyId").(string)
-	agentId := c.Query("agentId")
-	chatId := c.Query("chatId")
+	agentId := c.Query("agent_id")
+	chatId := c.Query("chat_id")
 	limit := c.QueryInt("limit", 20)
 	offset := c.QueryInt("offset", 0)
 
@@ -39,8 +39,8 @@ func FetchMessagesByChatId(c *fiber.Ctx) error {
 // Returns an array of messages (max end-start+1)
 func FetchRangeMessagesByChatId(c *fiber.Ctx) error {
 	companyId := c.Locals("companyId").(string)
-	agentId := c.Query("agentId")
-	chatId := c.Query("chatId")
+	agentId := c.Query("agent_id")
+	chatId := c.Query("chat_id")
 	start := c.QueryInt("start", 0)
 	end := c.QueryInt("end", start)
 
