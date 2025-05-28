@@ -14,4 +14,5 @@ func RegisterV1Routes(app *fiber.App) {
 	AgentRoutes(v1)
 	ChatRoutes(v1)
 	MessageRoutes(v1)
+	ContactRoutes(v1)
 }
