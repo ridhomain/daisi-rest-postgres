@@ -26,3 +26,23 @@ type Contact struct {
 	CreatedAt             time.Time  `json:"created_at,omitempty" gorm:"autoCreateTime"`
 	UpdatedAt             time.Time  `json:"updated_at,omitempty" gorm:"autoUpdateTime"`
 }
+
+type ContactFilter struct {
+	PhoneNumber string
+	AgentID     string
+	Tags        string
+	AssignedTo  string
+	Status      string
+	Origin      string
+}
+
+type ContactUpdateInput struct {
+	CustomName string `json:"custom_name"`
+	AssignedTo string `json:"assigned_to"`
+	Tags       string `json:"tags"`
+}
+
+type ContactPage struct {
+	Total int64                    `json:"total"`
+	Items []map[string]interface{} `json:"items"`
+}
