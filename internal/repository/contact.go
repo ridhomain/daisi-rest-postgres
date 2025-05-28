@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 
+	"gitlab.com/timkado/api/daisi-rest-postgres/internal/database"
 	"gitlab.com/timkado/api/daisi-rest-postgres/internal/model"
 	"gorm.io/gorm"
 )
@@ -16,12 +17,12 @@ type ContactRepository interface {
 	UpdateContact(ctx context.Context, companyId, id string, in model.ContactUpdateInput) (*model.Contact, error)
 }
 
-type contactRepo struct {
-	db *gorm.DB
+func NewContactRepository() ContactRepository {
+	return &contactRepo{db: database.DB}
 }
 
-func NewContactRepository(db *gorm.DB) ContactRepository {
-	return &contactRepo{db: db}
+type contactRepo struct {
+	db *gorm.DB
 }
 
 func (r *contactRepo) tableFor(companyId string) *gorm.DB {
