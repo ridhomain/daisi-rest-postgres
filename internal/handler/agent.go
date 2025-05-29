@@ -7,6 +7,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"gitlab.com/timkado/api/daisi-rest-postgres/internal/model"
 	"gitlab.com/timkado/api/daisi-rest-postgres/internal/service"
+	"gitlab.com/timkado/api/daisi-rest-postgres/pkg/utils"
 )
 
 var agentSvc service.AgentService
@@ -34,14 +35,13 @@ func ListAgents(c *fiber.Ctx) error {
 	}
 
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).
-			JSON(fiber.Map{"error": err.Error()})
+		return utils.Error(c, fiber.StatusInternalServerError, err.Error())
 	}
 
 	if agents == nil {
 		agents = make([]*model.Agent, 0)
 	}
-	return c.JSON(agents)
+	return utils.Success(c, agents)
 }
 
 // GetAgent handles GET /agents/:agent_id
@@ -51,14 +51,12 @@ func GetAgent(c *fiber.Ctx) error {
 
 	agent, err := agentSvc.GetByAgentID(c.Context(), companyId, agentId)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).
-			JSON(fiber.Map{"error": err.Error()})
+		return utils.Error(c, fiber.StatusInternalServerError, err.Error())
 	}
 	if agent == nil {
-		return c.Status(fiber.StatusNotFound).
-			JSON(fiber.Map{"error": "agent not found"})
+		return utils.Error(c, fiber.StatusNotFound, "agent not found")
 	}
-	return c.JSON(agent)
+	return utils.Success(c, agent)
 }
 
 // CreateAgent handles POST /agents
@@ -67,16 +65,14 @@ func CreateAgent(c *fiber.Ctx) error {
 	var in model.Agent
 
 	if err := c.BodyParser(&in); err != nil {
-		return c.Status(fiber.StatusBadRequest).
-			JSON(fiber.Map{"error": err.Error()})
+		return utils.Error(c, fiber.StatusBadRequest, err.Error())
 	}
 
 	created, err := agentSvc.Create(c.Context(), companyId, &in)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).
-			JSON(fiber.Map{"error": err.Error()})
+		return utils.Error(c, fiber.StatusBadRequest, err.Error())
 	}
-	return c.Status(fiber.StatusCreated).JSON(created)
+	return c.Status(fiber.StatusCreated).JSON(utils.APIResponse{Success: true, Data: created})
 }
 
 // UpdateAgentName handles PATCH /agents/:id
@@ -88,20 +84,17 @@ func UpdateAgentName(c *fiber.Ctx) error {
 		AgentName string `json:"agent_name"`
 	}
 	if err := c.BodyParser(&body); err != nil {
-		return c.Status(fiber.StatusBadRequest).
-			JSON(fiber.Map{"error": err.Error()})
+		return utils.Error(c, fiber.StatusBadRequest, err.Error())
 	}
 
 	updated, err := agentSvc.UpdateName(c.Context(), companyId, agentId, body.AgentName)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).
-			JSON(fiber.Map{"error": err.Error()})
+		return utils.Error(c, fiber.StatusBadRequest, err.Error())
 	}
 	if updated == nil {
-		return c.Status(fiber.StatusNotFound).
-			JSON(fiber.Map{"error": "agent not found"})
+		return utils.Error(c, fiber.StatusNotFound, "agent not found")
 	}
-	return c.JSON(updated)
+	return utils.Success(c, updated)
 }
 
 // DeleteAgent handles DELETE /agents/:id
@@ -110,8 +103,7 @@ func DeleteAgent(c *fiber.Ctx) error {
 	id := c.Params("id")
 
 	if err := agentSvc.Delete(c.Context(), companyId, id); err != nil {
-		return c.Status(fiber.StatusInternalServerError).
-			JSON(fiber.Map{"error": err.Error()})
+		return utils.Error(c, fiber.StatusInternalServerError, err.Error())
 	}
-	return c.SendStatus(fiber.StatusNoContent)
+	return c.Status(fiber.StatusNoContent).Send(nil)
 }

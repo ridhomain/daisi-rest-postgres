@@ -4,6 +4,7 @@ package handler
 import (
 	"github.com/gofiber/fiber/v2"
 	"gitlab.com/timkado/api/daisi-rest-postgres/internal/service"
+	"gitlab.com/timkado/api/daisi-rest-postgres/pkg/utils"
 )
 
 var chatSvc service.ChatService
@@ -17,8 +18,6 @@ func RegisterChatService(svc service.ChatService) {
 // Returns a JSON object with "total" and "items".
 func FetchChats(c *fiber.Ctx) error {
 	companyId := c.Locals("companyId").(string)
-
-	// parse pagination
 	limit := c.QueryInt("limit", 20)
 	offset := c.QueryInt("offset", 0)
 
@@ -35,18 +34,13 @@ func FetchChats(c *fiber.Ctx) error {
 
 	page, err := chatSvc.FetchChats(c.Context(), companyId, filter, limit, offset)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": err.Error(),
-		})
+		return utils.Error(c, fiber.StatusInternalServerError, err.Error())
 	}
 
 	if page.Items == nil {
 		page.Items = make([]map[string]interface{}, 0)
 	}
-	return c.JSON(fiber.Map{
-		"total": page.Total,
-		"items": page.Items,
-	})
+	return utils.SuccessWithTotal(c, page.Items, page.Total)
 }
 
 // FetchRangeChats handles GET /chats/range?&start=...&end=...&<filters>
@@ -68,15 +62,13 @@ func FetchRangeChats(c *fiber.Ctx) error {
 
 	items, err := chatSvc.FetchRangeChats(c.Context(), companyId, filter, start, end)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": err.Error(),
-		})
+		return utils.Error(c, fiber.StatusInternalServerError, err.Error())
 	}
 
 	if items == nil {
 		items = make([]map[string]interface{}, 0)
 	}
-	return c.JSON(items)
+	return utils.Success(c, items)
 }
 
 // SearchChats handles GET /chats/search?q=query
@@ -85,24 +77,16 @@ func SearchChats(c *fiber.Ctx) error {
 	q := c.Query("q")
 
 	if q == "" {
-		return c.JSON(fiber.Map{
-			"total": 0,
-			"items": []any{},
-		})
+		return utils.SuccessWithTotal(c, []any{}, 0)
 	}
 
 	page, err := chatSvc.SearchChats(c.Context(), companyId, q)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": err.Error(),
-		})
+		return utils.Error(c, fiber.StatusInternalServerError, err.Error())
 	}
 
 	if page.Items == nil {
 		page.Items = make([]map[string]interface{}, 0)
 	}
-	return c.JSON(fiber.Map{
-		"total": page.Total,
-		"items": page.Items,
-	})
+	return utils.SuccessWithTotal(c, page.Items, page.Total)
 }

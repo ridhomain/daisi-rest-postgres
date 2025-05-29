@@ -3,6 +3,7 @@ package handler
 import (
 	"github.com/gofiber/fiber/v2"
 	"gitlab.com/timkado/api/daisi-rest-postgres/internal/service"
+	"gitlab.com/timkado/api/daisi-rest-postgres/pkg/utils"
 )
 
 var messageSvc service.MessageService
@@ -24,14 +25,9 @@ func FetchMessagesByChatId(c *fiber.Ctx) error {
 
 	page, err := messageSvc.FetchMessagesByChatId(c.Context(), companyId, agentId, chatId, limit, offset)
 	if err != nil {
-		return c.
-			Status(fiber.StatusBadRequest).
-			JSON(fiber.Map{"error": err.Error()})
+		return utils.Error(c, fiber.StatusBadRequest, err.Error())
 	}
-	return c.JSON(fiber.Map{
-		"total": page.Total,
-		"items": page.Items,
-	})
+	return utils.SuccessWithTotal(c, page.Items, page.Total)
 }
 
 // FetchRangeMessagesByChatId handles:
@@ -46,9 +42,7 @@ func FetchRangeMessagesByChatId(c *fiber.Ctx) error {
 
 	items, err := messageSvc.FetchRangeMessagesByChatId(c.Context(), companyId, agentId, chatId, start, end)
 	if err != nil {
-		return c.
-			Status(fiber.StatusBadRequest).
-			JSON(fiber.Map{"error": err.Error()})
+		return utils.Error(c, fiber.StatusBadRequest, err.Error())
 	}
-	return c.JSON(items)
+	return utils.Success(c, items)
 }
