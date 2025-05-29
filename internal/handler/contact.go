@@ -5,6 +5,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"gitlab.com/timkado/api/daisi-rest-postgres/internal/model"
 	"gitlab.com/timkado/api/daisi-rest-postgres/internal/service"
+	"gitlab.com/timkado/api/daisi-rest-postgres/pkg/utils"
 )
 
 var contactSvc service.ContactService
@@ -31,12 +32,12 @@ func FetchContacts(c *fiber.Ctx) error {
 
 	page, err := contactSvc.FetchContacts(c.Context(), companyId, filter, sort, order, limit, offset)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		return utils.Error(c, fiber.StatusInternalServerError, err.Error())
 	}
 	if page.Items == nil {
 		page.Items = []map[string]interface{}{}
 	}
-	return c.JSON(fiber.Map{"total": page.Total, "items": page.Items})
+	return utils.SuccessWithTotal(c, page.Items, page.Total)
 }
 
 func GetContactByID(c *fiber.Ctx) error {
@@ -45,12 +46,12 @@ func GetContactByID(c *fiber.Ctx) error {
 
 	contact, err := contactSvc.GetContactByID(c.Context(), companyId, id)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		return utils.Error(c, fiber.StatusInternalServerError, err.Error())
 	}
 	if contact == nil {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "contact not found"})
+		return utils.Error(c, fiber.StatusNotFound, "contact not found")
 	}
-	return c.JSON(contact)
+	return utils.Success(c, contact)
 }
 
 func UpdateContact(c *fiber.Ctx) error {
@@ -59,15 +60,15 @@ func UpdateContact(c *fiber.Ctx) error {
 
 	var body model.ContactUpdateInput
 	if err := c.BodyParser(&body); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+		return utils.Error(c, fiber.StatusBadRequest, err.Error())
 	}
 
 	updated, err := contactSvc.UpdateContact(c.Context(), companyId, id, body)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		return utils.Error(c, fiber.StatusInternalServerError, err.Error())
 	}
 	if updated == nil {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "contact not found"})
+		return utils.Error(c, fiber.StatusNotFound, "contact not found")
 	}
-	return c.JSON(updated)
+	return utils.Success(c, updated)
 }
