@@ -9,17 +9,17 @@ import (
 	"gorm.io/gorm"
 )
 
-// MessagePage holds a page of messages plus the exact total count.
+// MessagePage holds a page of messages plus the exact total count
 type MessagePage struct {
 	Items []map[string]interface{} `json:"items"`
 	Total int64                    `json:"total"`
 }
 
-// MessageRepository defines read operations on a tenant's partitioned messages table.
+// MessageRepository defines read operations on a tenant's partitioned messages table
 type MessageRepository interface {
-	// FetchMessagesByChatId returns up to `limit` messages plus total count.
+	// FetchMessagesByChatId returns messages for a specific chat with pagination
 	FetchMessagesByChatId(ctx context.Context, companyId, agentId, chatId string, limit, offset int) (*MessagePage, error)
-	// FetchRangeMessagesByChatId returns messages in [start,end] for a given chat.
+	// FetchRangeMessagesByChatId returns messages in [start,end] range for infinite scroll
 	FetchRangeMessagesByChatId(ctx context.Context, companyId, agentId, chatId string, start, end int) ([]map[string]interface{}, error)
 }
 
@@ -31,12 +31,22 @@ type messageRepo struct {
 	db *gorm.DB
 }
 
-// messageTable returns the fully‐qualified, quoted parent table name:
-//
-//	"daisi_<companyId>"."messages"
+// messageTable returns the fully-qualified, quoted parent table name
 func (r *messageRepo) messageTable(companyId string) string {
 	schema := "daisi_" + companyId
 	return fmt.Sprintf(`"%s"."%s"`, schema, "messages")
+}
+
+// buildBaseQuery creates the base query for messages
+func (r *messageRepo) buildBaseQuery(ctx context.Context, companyId, agentId, chatId string) *gorm.DB {
+	tbl := r.messageTable(companyId)
+
+	return r.db.
+		Table(tbl).
+		WithContext(ctx).
+		Where("agent_id = ?", agentId).
+		Where("chat_id = ?", chatId).
+		Where("key IS NOT NULL") // Only get valid messages
 }
 
 func (r *messageRepo) FetchMessagesByChatId(
@@ -44,31 +54,26 @@ func (r *messageRepo) FetchMessagesByChatId(
 	companyId, agentId, chatId string,
 	limit, offset int,
 ) (*MessagePage, error) {
-	tbl := r.messageTable(companyId)
-
-	base := r.db.
-		Table(tbl).
-		WithContext(ctx).
-		Where("agent_id = ?", agentId).
-		Where("chat_id   = ?", chatId).
-		Where("key IS NOT NULL")
+	// Build base query
+	baseQuery := r.buildBaseQuery(ctx, companyId, agentId, chatId)
 
 	// Get total count
 	var total int64
-	if err := base.Count(&total).Error; err != nil {
-		return nil, err
+	if err := baseQuery.Count(&total).Error; err != nil {
+		return nil, fmt.Errorf("failed to count messages: %w", err)
 	}
 
-	// Fetch up to `limit` rows
-	rows := base.
+	// Fetch messages with pagination
+	query := r.buildBaseQuery(ctx, companyId, agentId, chatId).
 		Order("message_timestamp DESC").
 		Limit(limit).
 		Offset(offset)
 
 	var items []map[string]interface{}
-	if err := rows.Find(&items).Error; err != nil {
-		return nil, err
+	if err := query.Find(&items).Error; err != nil {
+		return nil, fmt.Errorf("failed to fetch messages: %w", err)
 	}
+
 	if items == nil {
 		items = make([]map[string]interface{}, 0)
 	}
@@ -81,24 +86,26 @@ func (r *messageRepo) FetchRangeMessagesByChatId(
 	companyId, agentId, chatId string,
 	start, end int,
 ) ([]map[string]interface{}, error) {
-	tbl := r.messageTable(companyId)
+	// Calculate limit from range
+	limit := end - start + 1
+	if limit <= 0 {
+		return []map[string]interface{}{}, nil
+	}
 
-	db := r.db.
-		Table(tbl).
-		WithContext(ctx).
-		Where("agent_id = ?", agentId).
-		Where("chat_id   = ?", chatId).
-		Where("key IS NOT NULL").
+	// Build query
+	query := r.buildBaseQuery(ctx, companyId, agentId, chatId).
 		Order("message_timestamp DESC").
 		Offset(start).
-		Limit(end - start + 1)
+		Limit(limit)
 
 	var items []map[string]interface{}
-	if err := db.Find(&items).Error; err != nil {
-		return nil, err
+	if err := query.Find(&items).Error; err != nil {
+		return nil, fmt.Errorf("failed to fetch range messages: %w", err)
 	}
+
 	if items == nil {
 		items = make([]map[string]interface{}, 0)
 	}
+
 	return items, nil
 }

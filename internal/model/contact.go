@@ -27,6 +27,7 @@ type Contact struct {
 	UpdatedAt             time.Time  `json:"updated_at,omitempty" gorm:"autoUpdateTime"`
 }
 
+// ContactFilter - keeping for compatibility but not used in improved implementation
 type ContactFilter struct {
 	PhoneNumber string
 	AgentID     string
@@ -36,10 +37,13 @@ type ContactFilter struct {
 	Origin      string
 }
 
+// ContactUpdateInput with pointer fields to allow partial updates
 type ContactUpdateInput struct {
-	CustomName string `json:"custom_name"`
-	AssignedTo string `json:"assigned_to"`
-	Tags       string `json:"tags"`
+	CustomName *string `json:"custom_name,omitempty"`
+	AssignedTo *string `json:"assigned_to,omitempty"`
+	Tags       *string `json:"tags,omitempty"`
+	Avatar     *string `json:"avatar,omitempty"`
+	Notes      *string `json:"notes,omitempty"`
 }
 
 type ContactPage struct {
