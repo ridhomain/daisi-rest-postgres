@@ -4,21 +4,20 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"gitlab.com/timkado/api/daisi-rest-postgres/internal/repository"
-	"gitlab.com/timkado/api/daisi-rest-postgres/pkg/logger"
-	"go.uber.org/zap"
 )
 
-// MessageService defines business operations for reading messages.
+// MessageService defines business operations for reading messages
 type MessageService interface {
-	// FetchMessagesByChatId returns up to `limit` messages plus the total count.
+	// FetchMessagesByChatId returns paginated messages for a chat
 	FetchMessagesByChatId(ctx context.Context, companyId, agentId, chatId string, limit, offset int) (*repository.MessagePage, error)
-	// FetchRangeMessagesByChatId returns messages in [start,end] for a given chat.
+	// FetchRangeMessagesByChatId returns messages in a specific range for infinite scroll
 	FetchRangeMessagesByChatId(ctx context.Context, companyId, agentId, chatId string, start, end int) ([]map[string]interface{}, error)
 }
 
-// NewMessageService constructs a MessageService backed by the given repository.
+// NewMessageService constructs a MessageService backed by the given repository
 func NewMessageService(repo repository.MessageRepository) MessageService {
 	return &messageService{repo: repo}
 }
@@ -32,11 +31,34 @@ func (s *messageService) FetchMessagesByChatId(
 	companyId, agentId, chatId string,
 	limit, offset int,
 ) (*repository.MessagePage, error) {
+	// Validate required parameters
 	if companyId == "" || agentId == "" || chatId == "" {
-		logger.NewLogger().Info("Payload", zap.String("companyId", companyId), zap.String("agentId", agentId), zap.String("chatId", chatId))
 		return nil, errors.New("companyId, agentId, and chatId are required")
 	}
-	return s.repo.FetchMessagesByChatId(ctx, companyId, agentId, chatId, limit, offset)
+
+	// Apply default pagination
+	if limit <= 0 {
+		limit = 20
+	} else if limit > 100 {
+		limit = 100 // Cap at 100 messages per request
+	}
+
+	if offset < 0 {
+		offset = 0
+	}
+
+	// Fetch messages from repository
+	page, err := s.repo.FetchMessagesByChatId(ctx, companyId, agentId, chatId, limit, offset)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch messages: %w", err)
+	}
+
+	// Ensure items is never nil
+	if page.Items == nil {
+		page.Items = make([]map[string]interface{}, 0)
+	}
+
+	return page, nil
 }
 
 func (s *messageService) FetchRangeMessagesByChatId(
@@ -44,8 +66,36 @@ func (s *messageService) FetchRangeMessagesByChatId(
 	companyId, agentId, chatId string,
 	start, end int,
 ) ([]map[string]interface{}, error) {
+	// Validate required parameters
 	if companyId == "" || agentId == "" || chatId == "" {
 		return nil, errors.New("companyId, agentId, and chatId are required")
 	}
-	return s.repo.FetchRangeMessagesByChatId(ctx, companyId, agentId, chatId, start, end)
+
+	// Validate range parameters
+	if start < 0 {
+		start = 0
+	}
+
+	if end < start {
+		end = start
+	}
+
+	// Limit range size to prevent excessive data retrieval
+	maxRangeSize := 100
+	if end-start+1 > maxRangeSize {
+		end = start + maxRangeSize - 1
+	}
+
+	// Fetch messages from repository
+	items, err := s.repo.FetchRangeMessagesByChatId(ctx, companyId, agentId, chatId, start, end)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch range messages: %w", err)
+	}
+
+	// Ensure items is never nil
+	if items == nil {
+		items = make([]map[string]interface{}, 0)
+	}
+
+	return items, nil
 }

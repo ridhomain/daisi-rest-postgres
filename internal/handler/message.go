@@ -1,3 +1,4 @@
+// internal/handler/message.go
 package handler
 
 import (
@@ -8,14 +9,13 @@ import (
 
 var messageSvc service.MessageService
 
-// RegisterMessageService wires in the MessageService implementation.
+// RegisterMessageService wires in the MessageService implementation
 func RegisterMessageService(svc service.MessageService) {
 	messageSvc = svc
 }
 
-// FetchMessagesByChatId handles:
-// GET /messages?agentId=AGENTID&chat_id=CHATID&limit=N
-// Returns { total: X, items: [...] }
+// FetchMessagesByChatId handles GET /messages?agent_id=...&chat_id=...&limit=...&offset=...
+// Returns paginated messages for a specific chat
 func FetchMessagesByChatId(c *fiber.Ctx) error {
 	companyId := c.Locals("companyId").(string)
 	agentId := c.Query("agent_id")
@@ -23,16 +23,21 @@ func FetchMessagesByChatId(c *fiber.Ctx) error {
 	limit := c.QueryInt("limit", 20)
 	offset := c.QueryInt("offset", 0)
 
+	// Validate required parameters
+	if agentId == "" || chatId == "" {
+		return utils.Error(c, fiber.StatusBadRequest, "agent_id and chat_id are required")
+	}
+
 	page, err := messageSvc.FetchMessagesByChatId(c.Context(), companyId, agentId, chatId, limit, offset)
 	if err != nil {
 		return utils.Error(c, fiber.StatusBadRequest, err.Error())
 	}
+
 	return utils.SuccessWithTotal(c, page.Items, page.Total)
 }
 
-// FetchRangeMessagesByChatId handles:
-// GET /messages/range?agentId=AGENTID&chatId=CHATID&start=0&end=9
-// Returns an array of messages (max end-start+1)
+// FetchRangeMessagesByChatId handles GET /messages/range?agent_id=...&chat_id=...&start=...&end=...
+// Returns messages within a specific range for infinite scroll
 func FetchRangeMessagesByChatId(c *fiber.Ctx) error {
 	companyId := c.Locals("companyId").(string)
 	agentId := c.Query("agent_id")
@@ -40,9 +45,15 @@ func FetchRangeMessagesByChatId(c *fiber.Ctx) error {
 	start := c.QueryInt("start", 0)
 	end := c.QueryInt("end", start)
 
+	// Validate required parameters
+	if agentId == "" || chatId == "" {
+		return utils.Error(c, fiber.StatusBadRequest, "agent_id and chat_id are required")
+	}
+
 	items, err := messageSvc.FetchRangeMessagesByChatId(c.Context(), companyId, agentId, chatId, start, end)
 	if err != nil {
 		return utils.Error(c, fiber.StatusBadRequest, err.Error())
 	}
+
 	return utils.Success(c, items)
 }
