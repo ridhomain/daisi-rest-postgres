@@ -7,17 +7,18 @@ import (
 	"strings"
 
 	"gitlab.com/timkado/api/daisi-rest-postgres/internal/database"
+	"gitlab.com/timkado/api/daisi-rest-postgres/internal/model"
 	"gorm.io/gorm"
 )
 
 type ChatPage struct {
-	Items []map[string]interface{} `json:"items"`
-	Total int64                    `json:"total"`
+	Items []model.Chat `json:"items"`
+	Total int64        `json:"total"`
 }
 
 type ChatRepository interface {
 	FetchChats(ctx context.Context, companyId string, filter map[string]interface{}, limit, offset int) (*ChatPage, error)
-	FetchRangeChats(ctx context.Context, companyId string, filter map[string]interface{}, start, end int) ([]map[string]interface{}, error)
+	FetchRangeChats(ctx context.Context, companyId string, filter map[string]interface{}, start, end int) ([]model.Chat, error)
 	SearchChats(ctx context.Context, companyId string, q string, agentId string) (*ChatPage, error)
 }
 
@@ -45,11 +46,10 @@ func (r *chatRepo) buildBaseQuery(ctx context.Context, companyId string) *gorm.D
 	chatTbl := r.chatTable(companyId)
 	contactsTbl := r.contactsTable(companyId)
 
-	// LEFT JOIN to get contact data for each chat
-	// The relationship is based on agent_id + phone_number combination
+	// Join by chat_id
 	joinSQL := fmt.Sprintf(
-		"LEFT JOIN %s ON %s.phone_number = %s.phone_number AND %s.agent_id = %s.agent_id",
-		contactsTbl, chatTbl, contactsTbl, chatTbl, contactsTbl,
+		"LEFT JOIN %s ON %s.chat_id = %s.chat_id",
+		contactsTbl, chatTbl, contactsTbl,
 	)
 
 	// Select all chat fields plus specific contact fields we need
@@ -151,13 +151,13 @@ func (r *chatRepo) FetchChats(
 	}
 
 	// Fetch data
-	var items []map[string]interface{}
+	var items []model.Chat // or appropriate model
 	if err := dataQuery.Find(&items).Error; err != nil {
 		return nil, fmt.Errorf("failed to fetch chats: %w", err)
 	}
 
 	if items == nil {
-		items = make([]map[string]interface{}, 0)
+		items = make([]model.Chat, 0)
 	}
 
 	return &ChatPage{Items: items, Total: total}, nil
@@ -168,7 +168,7 @@ func (r *chatRepo) FetchRangeChats(
 	companyId string,
 	filter map[string]interface{},
 	start, end int,
-) ([]map[string]interface{}, error) {
+) ([]model.Chat, error) {
 	chatTbl := r.chatTable(companyId)
 	contactsTbl := r.contactsTable(companyId)
 
@@ -190,13 +190,13 @@ func (r *chatRepo) FetchRangeChats(
 	}
 
 	// Fetch data
-	var items []map[string]interface{}
+	var items []model.Chat
 	if err := query.Find(&items).Error; err != nil {
 		return nil, fmt.Errorf("failed to fetch range chats: %w", err)
 	}
 
 	if items == nil {
-		items = make([]map[string]interface{}, 0)
+		items = make([]model.Chat, 0)
 	}
 
 	return items, nil
@@ -209,7 +209,7 @@ func (r *chatRepo) SearchChats(
 	agentId string,
 ) (*ChatPage, error) {
 	if query == "" {
-		return &ChatPage{Items: []map[string]interface{}{}, Total: 0}, nil
+		return &ChatPage{Items: []model.Chat{}, Total: 0}, nil
 	}
 
 	chatTbl := r.chatTable(companyId)
@@ -242,13 +242,13 @@ func (r *chatRepo) SearchChats(
 	db = db.Limit(100)
 
 	// Fetch data
-	var items []map[string]interface{}
+	var items []model.Chat // or appropriate model
 	if err := db.Find(&items).Error; err != nil {
 		return nil, fmt.Errorf("failed to search chats: %w", err)
 	}
 
 	if items == nil {
-		items = make([]map[string]interface{}, 0)
+		items = make([]model.Chat, 0)
 	}
 
 	return &ChatPage{Items: items, Total: int64(len(items))}, nil

@@ -48,9 +48,9 @@ func (r *contactRepo) buildBaseQuery(ctx context.Context, companyId string, incl
 	if includeChat {
 		chatTbl := r.chatTable(companyId)
 
-		// LEFT JOIN to get chat info if exists
+		// LEFT JOIN using chat_id for direct relationship
 		joinSQL := fmt.Sprintf(
-			"LEFT JOIN %s ch ON c.phone_number = ch.phone_number AND c.agent_id = ch.agent_id",
+			"LEFT JOIN %s ch ON c.chat_id = ch.chat_id",
 			chatTbl,
 		)
 
@@ -161,13 +161,13 @@ func (r *contactRepo) FetchContacts(
 	}
 
 	// Fetch data
-	var items []map[string]interface{}
+	var items []model.Contact
 	if err := query.Find(&items).Error; err != nil {
 		return nil, fmt.Errorf("failed to fetch contacts: %w", err)
 	}
 
 	if items == nil {
-		items = make([]map[string]interface{}, 0)
+		items = make([]model.Contact, 0)
 	}
 
 	return &model.ContactPage{Total: total, Items: items}, nil
@@ -230,18 +230,18 @@ func (r *contactRepo) UpdateContact(ctx context.Context, companyId, id string, u
 
 func (r *contactRepo) SearchContacts(ctx context.Context, companyId string, query, agentId string, limit int) (*model.ContactPage, error) {
 	if query == "" {
-		return &model.ContactPage{Items: []map[string]interface{}{}, Total: 0}, nil
+		return &model.ContactPage{Items: []model.Contact{}, Total: 0}, nil
 	}
 
 	contactTbl := r.contactTable(companyId)
 	chatTbl := r.chatTable(companyId)
 
-	// Build search query
+	// Build search query with chat_id join
 	db := r.db.
 		Table(contactTbl + " c").
 		WithContext(ctx).
 		Joins(fmt.Sprintf(
-			"LEFT JOIN %s ch ON c.phone_number = ch.phone_number AND c.agent_id = ch.agent_id",
+			"LEFT JOIN %s ch ON c.chat_id = ch.chat_id",
 			chatTbl,
 		))
 
@@ -275,13 +275,13 @@ func (r *contactRepo) SearchContacts(ctx context.Context, companyId string, quer
 		Limit(limit)
 
 	// Fetch data
-	var items []map[string]interface{}
+	var items []model.Contact
 	if err := db.Find(&items).Error; err != nil {
 		return nil, fmt.Errorf("failed to search contacts: %w", err)
 	}
 
 	if items == nil {
-		items = make([]map[string]interface{}, 0)
+		items = make([]model.Contact, 0)
 	}
 
 	return &model.ContactPage{Items: items, Total: int64(len(items))}, nil

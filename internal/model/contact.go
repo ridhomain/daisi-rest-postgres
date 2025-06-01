@@ -7,6 +7,7 @@ import (
 type Contact struct {
 	ID                    string     `json:"id" gorm:"primaryKey;type:text"`
 	PhoneNumber           string     `json:"phone_number" gorm:"type:text;uniqueIndex:uniq_agent_phone" validate:"required"`
+	ChatID                string     `json:"chat_id,omitempty" gorm:"column:chat_id;index;type:text"`
 	AgentID               string     `json:"agent_id,omitempty" gorm:"type:text;uniqueIndex:uniq_agent_phone"`
 	Type                  string     `json:"type,omitempty" gorm:"type:text"`                  // e.g., PERSONAL, AGENT, OTHER
 	CustomName            string     `json:"custom_name,omitempty" gorm:"type:text"`           // Alias or custom label
@@ -47,6 +48,6 @@ type ContactUpdateInput struct {
 }
 
 type ContactPage struct {
-	Total int64                    `json:"total"`
-	Items []map[string]interface{} `json:"items"`
+	Total int64     `json:"total"`
+	Items []Contact `json:"items"`
 }
