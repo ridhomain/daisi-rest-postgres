@@ -133,7 +133,7 @@ func (s *contactService) SearchContacts(ctx context.Context, companyId, query, a
 
 	if query == "" {
 		return &model.ContactPage{
-			Items: []map[string]interface{}{},
+			Items: []model.Contact{},
 			Total: 0,
 		}, nil
 	}

@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 
+	"gitlab.com/timkado/api/daisi-rest-postgres/internal/model"
 	"gitlab.com/timkado/api/daisi-rest-postgres/internal/repository"
 )
 
@@ -13,7 +14,7 @@ type ChatService interface {
 	// FetchChats returns a paginated page of chats with total count and joined contact info
 	FetchChats(ctx context.Context, companyId string, filter map[string]interface{}, limit, offset int) (*repository.ChatPage, error)
 	// FetchRangeChats returns a slice of chats with joined contact info
-	FetchRangeChats(ctx context.Context, companyId string, filter map[string]interface{}, start, end int) ([]map[string]interface{}, error)
+	FetchRangeChats(ctx context.Context, companyId string, filter map[string]interface{}, start, end int) ([]model.Chat, error)
 	// SearchChats performs a text search across chats and contacts
 	SearchChats(ctx context.Context, companyId, query, agentId string) (*repository.ChatPage, error)
 }
@@ -71,7 +72,7 @@ func (s *chatService) FetchRangeChats(
 	companyId string,
 	filter map[string]interface{},
 	start, end int,
-) ([]map[string]interface{}, error) {
+) ([]model.Chat, error) {
 	if companyId == "" {
 		return nil, errors.New("companyId is required")
 	}
@@ -119,7 +120,7 @@ func (s *chatService) SearchChats(
 	// Return empty result if query is empty
 	if query == "" {
 		return &repository.ChatPage{
-			Items: []map[string]interface{}{},
+			Items: []model.Chat{},
 			Total: 0,
 		}, nil
 	}

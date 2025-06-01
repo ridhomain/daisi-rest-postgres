@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 
+	"gitlab.com/timkado/api/daisi-rest-postgres/internal/model"
 	"gitlab.com/timkado/api/daisi-rest-postgres/internal/repository"
 )
 
@@ -14,7 +15,7 @@ type MessageService interface {
 	// FetchMessagesByChatId returns paginated messages for a chat
 	FetchMessagesByChatId(ctx context.Context, companyId, agentId, chatId string, limit, offset int) (*repository.MessagePage, error)
 	// FetchRangeMessagesByChatId returns messages in a specific range for infinite scroll
-	FetchRangeMessagesByChatId(ctx context.Context, companyId, agentId, chatId string, start, end int) ([]map[string]interface{}, error)
+	FetchRangeMessagesByChatId(ctx context.Context, companyId, agentId, chatId string, start, end int) ([]model.Message, error)
 }
 
 // NewMessageService constructs a MessageService backed by the given repository
@@ -55,7 +56,7 @@ func (s *messageService) FetchMessagesByChatId(
 
 	// Ensure items is never nil
 	if page.Items == nil {
-		page.Items = make([]map[string]interface{}, 0)
+		page.Items = make([]model.Message, 0)
 	}
 
 	return page, nil
@@ -65,7 +66,7 @@ func (s *messageService) FetchRangeMessagesByChatId(
 	ctx context.Context,
 	companyId, agentId, chatId string,
 	start, end int,
-) ([]map[string]interface{}, error) {
+) ([]model.Message, error) {
 	// Validate required parameters
 	if companyId == "" || agentId == "" || chatId == "" {
 		return nil, errors.New("companyId, agentId, and chatId are required")
@@ -94,7 +95,7 @@ func (s *messageService) FetchRangeMessagesByChatId(
 
 	// Ensure items is never nil
 	if items == nil {
-		items = make([]map[string]interface{}, 0)
+		items = make([]model.Message, 0)
 	}
 
 	return items, nil
