@@ -15,8 +15,8 @@ type Message struct {
 	ChatID           string         `json:"chat_id,omitempty" gorm:"column:chat_id;index"`
 	Jid              string         `json:"jid,omitempty" gorm:"column:jid;index"`
 	Flow             string         `json:"flow,omitempty" gorm:"column:flow"`
-	MessageText      string         `json:"message_text,omitempty" gorm:"column:message_text"`
-	MessageUrl       string         `json:"message_url,omitempty" gorm:"column:message_url"`
+	MessageText      string         `json:"message_text" gorm:"column:message_text"`
+	MessageUrl       string         `json:"message_url" gorm:"column:message_url"`
 	MessageType      string         `json:"message_type,omitempty" gorm:"column:message_type"`
 	AgentID          string         `json:"agent_id,omitempty" gorm:"column:agent_id;index"`
 	CompanyID        string         `json:"company_id,omitempty" gorm:"column:company_id"` // CompanyID is implicitly the tenant ID
@@ -29,5 +29,5 @@ type Message struct {
 	MessageDate      time.Time      `gorm:"column:message_date;type:date;not null"`
 	CreatedAt        time.Time      `json:"created_at,omitempty" gorm:"column:created_at;autoCreateTime"`
 	UpdatedAt        time.Time      `json:"updated_at,omitempty" gorm:"column:updated_at;autoUpdateTime"`
-	LastMetadata     datatypes.JSON `json:"last_metadata,omitempty" gorm:"type:jsonb;column:last_metadata"`
+	// LastMetadata     datatypes.JSON `json:"last_metadata,omitempty" gorm:"type:jsonb;column:last_metadata"`
 }
