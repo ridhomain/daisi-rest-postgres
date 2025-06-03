@@ -13,8 +13,8 @@ import (
 type ChatService interface {
 	// FetchChats returns a paginated page of chats with total count and joined contact info
 	FetchChats(ctx context.Context, companyId string, filter map[string]interface{}, limit, offset int) (*repository.ChatPage, error)
-	// FetchRangeChats returns a slice of chats with joined contact info
-	FetchRangeChats(ctx context.Context, companyId string, filter map[string]interface{}, start, end int) ([]model.Chat, error)
+	// FetchRangeChats returns a page of chats with total count and joined contact info
+	FetchRangeChats(ctx context.Context, companyId string, filter map[string]interface{}, start, end int) (*repository.ChatPage, error)
 	// SearchChats performs a text search across chats and contacts
 	SearchChats(ctx context.Context, companyId, query, agentId string) (*repository.ChatPage, error)
 }
@@ -72,7 +72,7 @@ func (s *chatService) FetchRangeChats(
 	companyId string,
 	filter map[string]interface{},
 	start, end int,
-) ([]model.Chat, error) {
+) (*repository.ChatPage, error) {
 	if companyId == "" {
 		return nil, errors.New("companyId is required")
 	}

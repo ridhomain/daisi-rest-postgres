@@ -60,7 +60,7 @@ func FetchChats(c *fiber.Ctx) error {
 }
 
 // FetchRangeChats handles GET /chats/range?start=...&end=...&<filters>
-// Used for infinite scroll implementation
+// Used for infinite scroll implementation - now returns total count like other endpoints
 func FetchRangeChats(c *fiber.Ctx) error {
 	companyId := c.Locals("companyId").(string)
 	start := c.QueryInt("start", 0)
@@ -89,12 +89,12 @@ func FetchRangeChats(c *fiber.Ctx) error {
 		}
 	}
 
-	items, err := chatSvc.FetchRangeChats(c.Context(), companyId, filter, start, end)
+	page, err := chatSvc.FetchRangeChats(c.Context(), companyId, filter, start, end)
 	if err != nil {
 		return utils.Error(c, fiber.StatusInternalServerError, err.Error())
 	}
 
-	return utils.Success(c, items)
+	return utils.SuccessWithTotal(c, page.Items, page.Total)
 }
 
 // SearchChats handles GET /chats/search?q=query

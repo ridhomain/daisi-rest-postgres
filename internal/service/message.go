@@ -12,10 +12,10 @@ import (
 
 // MessageService defines business operations for reading messages
 type MessageService interface {
-	// FetchMessagesByChatId returns paginated messages for a chat
-	FetchMessagesByChatId(ctx context.Context, companyId, agentId, chatId string, limit, offset int) (*repository.MessagePage, error)
-	// FetchRangeMessagesByChatId returns messages in a specific range for infinite scroll
-	FetchRangeMessagesByChatId(ctx context.Context, companyId, agentId, chatId string, start, end int) ([]model.Message, error)
+	// FetchMessagesByChatId returns paginated messages for a chat with sorting
+	FetchMessagesByChatId(ctx context.Context, companyId, agentId, chatId string, sort, order string, limit, offset int) (*repository.MessagePage, error)
+	// FetchRangeMessagesByChatId returns messages in a specific range for infinite scroll with total count
+	FetchRangeMessagesByChatId(ctx context.Context, companyId, agentId, chatId string, sort, order string, start, end int) (*repository.MessagePage, error)
 }
 
 // NewMessageService constructs a MessageService backed by the given repository
@@ -30,6 +30,7 @@ type messageService struct {
 func (s *messageService) FetchMessagesByChatId(
 	ctx context.Context,
 	companyId, agentId, chatId string,
+	sort, order string,
 	limit, offset int,
 ) (*repository.MessagePage, error) {
 	// Validate required parameters
@@ -48,8 +49,16 @@ func (s *messageService) FetchMessagesByChatId(
 		offset = 0
 	}
 
+	// Default sort parameters
+	if sort == "" {
+		sort = "message_timestamp"
+	}
+	if order == "" {
+		order = "DESC"
+	}
+
 	// Fetch messages from repository
-	page, err := s.repo.FetchMessagesByChatId(ctx, companyId, agentId, chatId, limit, offset)
+	page, err := s.repo.FetchMessagesByChatId(ctx, companyId, agentId, chatId, sort, order, limit, offset)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch messages: %w", err)
 	}
@@ -65,8 +74,9 @@ func (s *messageService) FetchMessagesByChatId(
 func (s *messageService) FetchRangeMessagesByChatId(
 	ctx context.Context,
 	companyId, agentId, chatId string,
+	sort, order string,
 	start, end int,
-) ([]model.Message, error) {
+) (*repository.MessagePage, error) {
 	// Validate required parameters
 	if companyId == "" || agentId == "" || chatId == "" {
 		return nil, errors.New("companyId, agentId, and chatId are required")
@@ -87,16 +97,24 @@ func (s *messageService) FetchRangeMessagesByChatId(
 		end = start + maxRangeSize - 1
 	}
 
+	// Default sort parameters
+	if sort == "" {
+		sort = "message_timestamp"
+	}
+	if order == "" {
+		order = "DESC"
+	}
+
 	// Fetch messages from repository
-	items, err := s.repo.FetchRangeMessagesByChatId(ctx, companyId, agentId, chatId, start, end)
+	page, err := s.repo.FetchRangeMessagesByChatId(ctx, companyId, agentId, chatId, sort, order, start, end)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch range messages: %w", err)
 	}
 
 	// Ensure items is never nil
-	if items == nil {
-		items = make([]model.Message, 0)
+	if page.Items == nil {
+		page.Items = make([]model.Message, 0)
 	}
 
-	return items, nil
+	return page, nil
 }
