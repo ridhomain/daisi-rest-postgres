@@ -17,7 +17,8 @@ type Agent struct {
 	// AgentName is a user-defined custom label or name for the agent.
 	AgentName string `json:"agent_name" gorm:"column:agent_name"`
 	// HostName is the name of the device or host machine running the agent instance.
-	HostName string `json:"host_name" gorm:"column:host_name"`
+	HostName    string `json:"host_name" gorm:"column:host_name"`
+	PhoneNumber string `json:"phone_number,omitempty" gorm:"column:phone_number;index"`
 	// Version stores the version information of the agent software.
 	Version string `json:"version" gorm:"column:version"`
 	// CompanyID identifies the company/tenant this agent belongs to.

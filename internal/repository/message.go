@@ -19,9 +19,9 @@ type MessagePage struct {
 // MessageRepository defines read operations on a tenant's partitioned messages table
 type MessageRepository interface {
 	// FetchMessagesByChatId returns messages for a specific chat with pagination
-	FetchMessagesByChatId(ctx context.Context, companyId, agentId, chatId string, limit, offset int) (*MessagePage, error)
+	FetchMessagesByChatId(ctx context.Context, companyId, agentId, chatId string, sort, order string, limit, offset int) (*MessagePage, error)
 	// FetchRangeMessagesByChatId returns messages in [start,end] range for infinite scroll
-	FetchRangeMessagesByChatId(ctx context.Context, companyId, agentId, chatId string, start, end int) ([]model.Message, error)
+	FetchRangeMessagesByChatId(ctx context.Context, companyId, agentId, chatId string, sort, order string, start, end int) (*MessagePage, error)
 }
 
 func NewMessageRepository() MessageRepository {
@@ -36,6 +36,31 @@ type messageRepo struct {
 func (r *messageRepo) messageTable(companyId string) string {
 	schema := "daisi_" + companyId
 	return fmt.Sprintf(`"%s"."%s"`, schema, "messages")
+}
+
+func (r *messageRepo) validateSort(sort, order string) (string, string) {
+	// Allowed sort fields
+	allowedSortFields := map[string]bool{
+		"message_timestamp": true,
+		// "created_at":        true,
+		// "updated_at":        true,
+		// "from_phone":        true,
+		// "to_phone":          true,
+		// "message_type":      true,
+		// "flow":              true,
+	}
+
+	// Default sort
+	if sort == "" || !allowedSortFields[sort] {
+		sort = "message_timestamp"
+	}
+
+	// Validate order
+	if order != "ASC" && order != "asc" {
+		order = "DESC"
+	}
+
+	return sort, order
 }
 
 // buildBaseQuery creates the base query for messages
@@ -53,8 +78,12 @@ func (r *messageRepo) buildBaseQuery(ctx context.Context, companyId, agentId, ch
 func (r *messageRepo) FetchMessagesByChatId(
 	ctx context.Context,
 	companyId, agentId, chatId string,
+	sort, order string,
 	limit, offset int,
 ) (*MessagePage, error) {
+	// Validate sort parameters
+	sort, order = r.validateSort(sort, order)
+
 	// Build base query
 	baseQuery := r.buildBaseQuery(ctx, companyId, agentId, chatId)
 
@@ -66,7 +95,7 @@ func (r *messageRepo) FetchMessagesByChatId(
 
 	// Fetch messages with pagination
 	query := r.buildBaseQuery(ctx, companyId, agentId, chatId).
-		Order("message_timestamp DESC").
+		Order(fmt.Sprintf("%s %s", sort, order)).
 		Limit(limit).
 		Offset(offset)
 
@@ -85,17 +114,30 @@ func (r *messageRepo) FetchMessagesByChatId(
 func (r *messageRepo) FetchRangeMessagesByChatId(
 	ctx context.Context,
 	companyId, agentId, chatId string,
+	sort, order string,
 	start, end int,
-) ([]model.Message, error) {
+) (*MessagePage, error) {
+	// Validate sort parameters
+	sort, order = r.validateSort(sort, order)
+
 	// Calculate limit from range
 	limit := end - start + 1
 	if limit <= 0 {
-		return []model.Message{}, nil
+		return &MessagePage{Items: []model.Message{}, Total: 0}, nil
 	}
 
 	// Build query
+	baseQuery := r.buildBaseQuery(ctx, companyId, agentId, chatId)
+
+	// Get total count
+	var total int64
+	if err := baseQuery.Count(&total).Error; err != nil {
+		return nil, fmt.Errorf("failed to count messages: %w", err)
+	}
+
+	// Build query for range
 	query := r.buildBaseQuery(ctx, companyId, agentId, chatId).
-		Order("message_timestamp DESC").
+		Order(fmt.Sprintf("%s %s", sort, order)).
 		Offset(start).
 		Limit(limit)
 
@@ -108,5 +150,5 @@ func (r *messageRepo) FetchRangeMessagesByChatId(
 		items = make([]model.Message, 0)
 	}
 
-	return items, nil
+	return &MessagePage{Items: items, Total: total}, nil
 }

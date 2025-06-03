@@ -18,7 +18,7 @@ type ChatPage struct {
 
 type ChatRepository interface {
 	FetchChats(ctx context.Context, companyId string, filter map[string]interface{}, limit, offset int) (*ChatPage, error)
-	FetchRangeChats(ctx context.Context, companyId string, filter map[string]interface{}, start, end int) ([]model.Chat, error)
+	FetchRangeChats(ctx context.Context, companyId string, filter map[string]interface{}, start, end int) (*ChatPage, error)
 	SearchChats(ctx context.Context, companyId string, q string, agentId string) (*ChatPage, error)
 }
 
@@ -97,21 +97,15 @@ func (r *chatRepo) applyFilters(query *gorm.DB, filter map[string]interface{}, c
 	return query
 }
 
-func (r *chatRepo) FetchChats(
-	ctx context.Context,
-	companyId string,
-	filter map[string]interface{},
-	limit, offset int,
-) (*ChatPage, error) {
+// buildCountQuery creates an optimized count query without JOIN
+func (r *chatRepo) buildCountQuery(ctx context.Context, companyId string, filter map[string]interface{}) *gorm.DB {
 	chatTbl := r.chatTable(companyId)
-	contactsTbl := r.contactsTable(companyId)
 
-	// Count query without JOIN for better performance
 	countQuery := r.db.
 		Table(chatTbl).
 		WithContext(ctx)
 
-	// Apply filters for count (only chat table filters)
+	// Apply filters for count (only chat table filters for performance)
 	for key, value := range filter {
 		switch key {
 		case "agent_id":
@@ -129,8 +123,21 @@ func (r *chatRepo) FetchChats(
 		}
 	}
 
-	// Get total count
+	return countQuery
+}
+
+func (r *chatRepo) FetchChats(
+	ctx context.Context,
+	companyId string,
+	filter map[string]interface{},
+	limit, offset int,
+) (*ChatPage, error) {
+	chatTbl := r.chatTable(companyId)
+	contactsTbl := r.contactsTable(companyId)
+
+	// Get total count with optimized query
 	var total int64
+	countQuery := r.buildCountQuery(ctx, companyId, filter)
 	if err := countQuery.Count(&total).Error; err != nil {
 		return nil, fmt.Errorf("failed to count chats: %w", err)
 	}
@@ -151,7 +158,7 @@ func (r *chatRepo) FetchChats(
 	}
 
 	// Fetch data
-	var items []model.Chat // or appropriate model
+	var items []model.Chat
 	if err := dataQuery.Find(&items).Error; err != nil {
 		return nil, fmt.Errorf("failed to fetch chats: %w", err)
 	}
@@ -168,9 +175,16 @@ func (r *chatRepo) FetchRangeChats(
 	companyId string,
 	filter map[string]interface{},
 	start, end int,
-) ([]model.Chat, error) {
+) (*ChatPage, error) {
 	chatTbl := r.chatTable(companyId)
 	contactsTbl := r.contactsTable(companyId)
+
+	// Get total count with optimized query
+	var total int64
+	countQuery := r.buildCountQuery(ctx, companyId, filter)
+	if err := countQuery.Count(&total).Error; err != nil {
+		return nil, fmt.Errorf("failed to count chats: %w", err)
+	}
 
 	// Build query with JOIN
 	query := r.buildBaseQuery(ctx, companyId)
@@ -199,7 +213,7 @@ func (r *chatRepo) FetchRangeChats(
 		items = make([]model.Chat, 0)
 	}
 
-	return items, nil
+	return &ChatPage{Items: items, Total: total}, nil
 }
 
 func (r *chatRepo) SearchChats(
@@ -242,7 +256,7 @@ func (r *chatRepo) SearchChats(
 	db = db.Limit(100)
 
 	// Fetch data
-	var items []model.Chat // or appropriate model
+	var items []model.Chat
 	if err := db.Find(&items).Error; err != nil {
 		return nil, fmt.Errorf("failed to search chats: %w", err)
 	}
