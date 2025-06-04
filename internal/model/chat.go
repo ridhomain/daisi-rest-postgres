@@ -20,6 +20,12 @@ type Chat struct {
 	AgentID               string         `json:"agent_id" gorm:"column:agent_id;index"`
 	CompanyID             string         `json:"company_id" gorm:"column:company_id"`
 	PhoneNumber           string         `json:"phone_number" gorm:"column:phone_number"`
-	CreatedAt             time.Time      `json:"created_at" gorm:"column:created_at;autoCreateTime"`
-	UpdatedAt             time.Time      `json:"updated_at" gorm:"column:updated_at;autoUpdateTime"`
+	HasContact            bool           `json:"has_contact" gorm:"column:has_contact"`
+	ContactCustomName     string         `json:"contact_custom_name" gorm:"column:contact_custom_name"`
+	ContactTags           string         `json:"contact_tags" gorm:"column:contact_tags"`
+	ContactAssignedTo     string         `json:"contact_assigned_to" gorm:"column:contact_assigned_too"`
+	ContactOrigin         string         `json:"contact_origin" gorm:"column:contact_origin"`
+	// PushName              string         `json:"push_name" gorm:"column:push_name"`
+	CreatedAt time.Time `json:"created_at,omitempty" gorm:"column:created_at;autoCreateTime"`
+	UpdatedAt time.Time `json:"updated_at,omitempty" gorm:"column:updated_at;autoUpdateTime"`
 }
