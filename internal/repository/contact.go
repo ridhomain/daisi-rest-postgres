@@ -175,10 +175,12 @@ func (r *contactRepo) FetchContacts(
 
 func (r *contactRepo) GetContactByID(ctx context.Context, companyId, id string) (*model.Contact, error) {
 	var contact model.Contact
+
+	// Use the raw table name without alias for simple queries
 	err := r.db.
-		Table(r.contactTable(companyId)+" c").
+		Table(r.contactTable(companyId)).
 		WithContext(ctx).
-		Where("c.id = ?", id).
+		Where("id = ?", id).
 		First(&contact).Error
 
 	if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -189,10 +191,12 @@ func (r *contactRepo) GetContactByID(ctx context.Context, companyId, id string) 
 
 func (r *contactRepo) GetContactByPhoneAndAgent(ctx context.Context, companyId, phoneNumber, agentId string) (*model.Contact, error) {
 	var contact model.Contact
+
+	// Use the raw table name without alias for simple queries
 	err := r.db.
-		Table(r.contactTable(companyId)+" c").
+		Table(r.contactTable(companyId)).
 		WithContext(ctx).
-		Where("c.phone_number = ? AND c.agent_id = ?", phoneNumber, agentId).
+		Where("phone_number = ? AND agent_id = ?", phoneNumber, agentId).
 		First(&contact).Error
 
 	if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -203,12 +207,14 @@ func (r *contactRepo) GetContactByPhoneAndAgent(ctx context.Context, companyId, 
 
 func (r *contactRepo) UpdateContact(ctx context.Context, companyId, id string, updates map[string]interface{}) (*model.Contact, error) {
 	var contact model.Contact
+
+	// Use the raw table name without alias for simple queries
 	db := r.db.
-		Table(r.contactTable(companyId) + " c").
+		Table(r.contactTable(companyId)).
 		WithContext(ctx)
 
 	// First, fetch the existing contact
-	if err := db.Where("c.id = ?", id).First(&contact).Error; err != nil {
+	if err := db.Where("id = ?", id).First(&contact).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
 		}
@@ -221,7 +227,7 @@ func (r *contactRepo) UpdateContact(ctx context.Context, companyId, id string, u
 	}
 
 	// Fetch updated contact
-	if err := db.Where("c.id = ?", id).First(&contact).Error; err != nil {
+	if err := db.Where("id = ?", id).First(&contact).Error; err != nil {
 		return nil, err
 	}
 
