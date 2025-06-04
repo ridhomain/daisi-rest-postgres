@@ -18,7 +18,7 @@ type Agent struct {
 	AgentName string `json:"agent_name" gorm:"column:agent_name"`
 	// HostName is the name of the device or host machine running the agent instance.
 	HostName    string `json:"host_name" gorm:"column:host_name"`
-	PhoneNumber string `json:"phone_number,omitempty" gorm:"column:phone_number;index"`
+	PhoneNumber string `json:"phone_number" gorm:"column:phone_number"`
 	// Version stores the version information of the agent software.
 	Version string `json:"version" gorm:"column:version"`
 	// CompanyID identifies the company/tenant this agent belongs to.
